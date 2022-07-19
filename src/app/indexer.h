@@ -30,17 +30,8 @@ namespace app
       ccf::indexing::strategies::VisitEachEntryInMap(map_name, "IndexByValue")
     {}
 
-    // for all transaction in 0..n-1, 
-    // last[id] is the last writing transaction for id. 
-    std::map<size_t, ccf::SeqNo> last = {}; 
     tree_t::position root = new pt::Leaf(0,0); // sadly we don't do empty trees.
     size_t n = 0;   
-
-    // updating: we are getting callbacks on committed transactions.
-    // committing: we committed n as next PT root index, but don't have the PT receipt yet.
-    // issuing: we have everything we need to issue read receipts up to n.
-    enum State { updating, waiting, issuing };
-    State state = updating; 
 
   protected: 
     void visit_entry(
@@ -51,8 +42,8 @@ namespace app
       size_t key = kv::Map<size_t, std::string>::KeySerialiser::from_serialised(k);
       size_t pos = tx_id.seqno;
       LOG_INFO_FMT("PT: Inserting {} -> {}", key, pos);
-      last[key] = pos; 
       tree_t::insert(pt::Leaf(key,pos), &root);
+      n = pos; 
     };
   };
 }
